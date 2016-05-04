@@ -17,27 +17,31 @@ void dump(struct btree_table *table, int level)
 }
 #endif
 
-static struct btree_table *alloc_table(struct btree *btree)
+static struct btree_table *
+alloc_table(struct btree *btree)
 {
 	size_t size = sizeof(struct btree_table) +
 			sizeof(struct btree_item) * (btree->num_keys + 1);
+
 	struct btree_table *table = malloc(size);
 	if (table == NULL)
 		return NULL;
+
 	memset(table, 0, size);
 	return table;
 }
 
-void btree_init(struct btree *btree, cmp_func_t cmp, size_t num_keys)
+void
+btree_init(struct btree *btree, cmp_func_t cmp, size_t num_keys)
 {
 	btree->top = NULL;
 	btree->num_keys = num_keys;
 	btree->cmp = cmp;
 }
 
-static struct btree_table *split_table(struct btree *btree,
-					struct btree_table *table,
-					void **key, void **value)
+static struct btree_table *
+split_table(struct btree *btree, struct btree_table *table,
+			void **key, void **value)
 {
 	*key = table->items[btree->num_keys / 2].key;
 	*value = table->items[btree->num_keys / 2].value;
@@ -53,7 +57,8 @@ static struct btree_table *split_table(struct btree *btree,
 	return new_table;
 }
 
-static struct btree_table *collapse(struct btree_table *table)
+static struct btree_table *
+collapse(struct btree_table *table)
 {
 	struct btree_table *child = table->items[0].child;
 	free(table);
@@ -63,8 +68,8 @@ static struct btree_table *collapse(struct btree_table *table)
 static void remove_table(struct btree_table *table, size_t i,
 			 void **key, void **value);
 
-static void take_smallest(struct btree_table *table,
-			 void **key, void **value)
+static void
+take_smallest(struct btree_table *table, void **key, void **value)
 {
 	struct btree_table *child = table->items[0].child;
 	if (child == NULL) {
@@ -76,8 +81,8 @@ static void take_smallest(struct btree_table *table,
 		table->items[0].child = collapse(child);
 }
 
-static void take_largest(struct btree_table *table,
-			 void **key, void **value)
+static void
+take_largest(struct btree_table *table, void **key, void **value)
 {
 	struct btree_table *child = table->items[table->size].child;
 	if (child == NULL) {
@@ -89,8 +94,8 @@ static void take_largest(struct btree_table *table,
 		table->items[table->size].child = collapse(child);
 }
 
-static void remove_table(struct btree_table *table, size_t i,
-			 void **key, void **value)
+static void
+remove_table(struct btree_table *table, size_t i, void **key, void **value)
 {
 	*key = table->items[i].key;
 	*value = table->items[i].value;
@@ -123,8 +128,8 @@ static void remove_table(struct btree_table *table, size_t i,
 		table->items[i].child = right_child;
 }
 
-static void *insert_table(struct btree *btree,
-			  struct btree_table *table, void **key, void **value)
+static void *
+insert_table(struct btree *btree, struct btree_table *table, void **key, void **value)
 {
 	size_t left = 0, right = table->size;
 	while (left < right) {
@@ -156,15 +161,17 @@ static void *insert_table(struct btree *btree,
 	table->size++;
 	memmove(&table->items[i + 1], &table->items[i],
 		(table->size - i) * sizeof(struct btree_item));
+
 	table->items[i].key = *key;
 	table->items[i].value = *value;
 	table->items[i].child = child;
 	table->items[i + 1].child = right_child;
+
 	return ret;
 }
 
-static void *delete_table(struct btree *btree,
-			  struct btree_table *table, void *key)
+static void *
+delete_table(struct btree *btree, struct btree_table *table, void *key)
 {
 	size_t left = 0, right = table->size, i;
 	while (left < right) {
@@ -192,10 +199,12 @@ static void *delete_table(struct btree *btree,
 
 	void *ret = NULL;
 	remove_table(table, i, &key, &ret);
+
 	return ret;
 }
 
-void *btree_insert(struct btree *btree, void *key, void *value)
+void *
+btree_insert(struct btree *btree, void *key, void *value)
 {
 	void *ret = NULL;
 	struct btree_table *right_child = NULL;
@@ -218,7 +227,8 @@ void *btree_insert(struct btree *btree, void *key, void *value)
 	return ret;
 }
 
-void *btree_delete(struct btree *btree, void *key)
+void *
+btree_delete(struct btree *btree, void *key)
 {
 	void *ret = delete_table(btree, btree->top, key);
 	if (btree->top->size == 0)
@@ -226,7 +236,8 @@ void *btree_delete(struct btree *btree, void *key)
 	return ret;
 }
 
-void *btree_get(struct btree *btree, void *key)
+void *
+btree_get(struct btree *btree, void *key)
 {
 	struct btree_table *table = btree->top;
 	while (table) {
@@ -257,3 +268,4 @@ size_t btree_depth(struct btree_table *table)
 	}
 	return max_depth + 1;
 }
+
