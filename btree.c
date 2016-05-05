@@ -21,7 +21,7 @@ static struct btree_table *
 alloc_table(struct btree *btree)
 {
 	size_t size = sizeof(struct btree_table) +	// 分配除了items[]之外其他成员的空间
-			sizeof(struct btree_item) * (btree->num_keys + 1);	// 分配items[]的空间
+			sizeof(struct btree_item) * (btree->max_keys + 1);	// 分配items[]的空间
 
 	struct btree_table *table = malloc(size);
 	if (table == NULL)
@@ -32,10 +32,10 @@ alloc_table(struct btree *btree)
 }
 
 void
-btree_init(struct btree *btree, cmp_func_t cmp, size_t num_keys)
+btree_init(struct btree *btree, cmp_func_t cmp, size_t max_keys)
 {
 	btree->top = NULL;
-	btree->num_keys = num_keys;
+	btree->max_keys = max_keys;
 	btree->cmp = cmp;
 }
 
@@ -43,14 +43,14 @@ static struct btree_table *
 split_table(struct btree *btree, struct btree_table *table,
 			void **key, void **value)
 {
-	size_t mid = btree->num_keys / 2;
+	size_t mid = btree->max_keys / 2;
 	*key = table->items[mid].key;
 	*value = table->items[mid].value;
 
 	table->size = mid;
 
 	struct btree_table *new_table = alloc_table(btree);
-	new_table->size = btree->num_keys - mid - 1;
+	new_table->size = btree->max_keys - mid - 1;
 
 	memcpy(new_table->items, &table->items[mid + 1],
 		new_table->size * sizeof(struct btree_item));
@@ -153,7 +153,7 @@ insert_table(struct btree *btree, struct btree_table *table, void **key, void **
 	if (child) {
 		/* recursion */
 		ret = insert_table(btree, child, key, value);
-		if (child->size < btree->num_keys)
+		if (child->size < btree->max_keys)
 			return ret;
 		right_child = split_table(btree, child, key, value);
 	} else
@@ -211,7 +211,7 @@ btree_insert(struct btree *btree, void *key, void *value)
 	struct btree_table *right_child = NULL;
 	if (btree->top) {
 		ret = insert_table(btree, btree->top, &key, &value);
-		if (btree->top->size < btree->num_keys)
+		if (btree->top->size < btree->max_keys)
 			return ret;
 		right_child = split_table(btree, btree->top, &key, &value);
 	} else
