@@ -20,8 +20,8 @@ void dump(struct btree_table *table, int level)
 static struct btree_table *
 alloc_table(struct btree *btree)
 {
-	size_t size = sizeof(struct btree_table) +
-			sizeof(struct btree_item) * (btree->num_keys + 1);
+	size_t size = sizeof(struct btree_table) +	// 分配除了items[]之外其他成员的空间
+			sizeof(struct btree_item) * (btree->num_keys + 1);	// 分配items[]的空间
 
 	struct btree_table *table = malloc(size);
 	if (table == NULL)
@@ -43,16 +43,17 @@ static struct btree_table *
 split_table(struct btree *btree, struct btree_table *table,
 			void **key, void **value)
 {
-	*key = table->items[btree->num_keys / 2].key;
-	*value = table->items[btree->num_keys / 2].value;
+	size_t mid = btree->num_keys / 2;
+	*key = table->items[mid].key;
+	*value = table->items[mid].value;
 
-	table->size = btree->num_keys / 2;
+	table->size = mid;
 
 	struct btree_table *new_table = alloc_table(btree);
-	new_table->size = btree->num_keys / 2 - 1;
+	new_table->size = btree->num_keys - mid - 1;
 
-	memcpy(new_table->items, &table->items[btree->num_keys / 2 + 1],
-		btree->num_keys / 2 * sizeof(struct btree_item));
+	memcpy(new_table->items, &table->items[mid + 1],
+		new_table->size * sizeof(struct btree_item));
 
 	return new_table;
 }
